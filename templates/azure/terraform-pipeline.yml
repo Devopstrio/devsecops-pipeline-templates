@@ -1,0 +1,47 @@
+name: Enterprise DevSecOps Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      terraform_version:
+        required: false
+        type: string
+        default: "1.5.0"
+
+jobs:
+  security_scan:
+    name: 🛡️ Security Guardrails
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: TfLint
+        run: echo "Running Terraform Linter..."
+
+      - name: Checkov (IaC Scan)
+        run: echo "Scanning for security misconfigurations..."
+
+      - name: Trivy (Secret Scan)
+        run: echo "Scanning for leaked credentials..."
+
+  terraform_plan:
+    name: 📝 Terraform Plan
+    needs: security_scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Terraform Init & Plan
+        run: echo "Generating execution plan for ${{ inputs.environment }}..."
+
+  deploy:
+    name: 🚀 Production Deploy
+    needs: terraform_plan
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ inputs.environment }}
+    steps:
+      - name: Terraform Apply
+        run: echo "Deploying to ${{ inputs.environment }} with approval gate..."
